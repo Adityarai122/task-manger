@@ -6,22 +6,30 @@ Full-stack task manager with **role-based access control** (Admin / User), JWT a
 
 ## 🌐 Live demo
 
-| | |
-|---|---|
-| **App** | https://task-manager-frontend-woad.vercel.app |
-| **API** | https://task-manager-backend-3i8o.onrender.com |
-| **Repo** | https://github.com/Adityarai122/task-manger |
+**App:** https://task-manager-frontend-woad.vercel.app
+**API:** https://task-manager-backend-3i8o.onrender.com
+**Repo:** https://github.com/Adityarai122/task-manger
 
 > First request after a quiet period takes 30–50 seconds — the free Render backend cold-starts on demand. Subsequent requests are instant.
 
-### Demo credentials
+---
+
+### 🔑 Demo login credentials
+
+> Use these to sign in to the live app:
+
+| | |
+|---|---|
+| **Email** | `admin@taskmanager.local` |
+| **Password** | `Admin@123` |
+| **Role** | Admin (full access) |
 
 ```
 Email:    admin@taskmanager.local
 Password: Admin@123
 ```
 
-The admin invites everyone else (Admin or User) from the **Users** page — there is no public sign-up by design.
+The admin invites everyone else (Admin or User) from the **Users** page — there is no public sign-up by design. Once you log in, you can create another admin or regular user from the Users tab to test the role-based scope.
 
 ---
 
