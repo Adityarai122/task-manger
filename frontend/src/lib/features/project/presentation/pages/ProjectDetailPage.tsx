@@ -4,6 +4,7 @@ import {
   Archive,
   ArrowLeft,
   Crown,
+  FolderKanban,
   Trash2,
   UserMinus,
   Users2,
@@ -180,66 +181,97 @@ export function ProjectDetailPage() {
         </Link>
       </div>
 
-      <div className="rounded-xl border bg-card p-6 shadow-sm">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div className="space-y-2 min-w-0">
-            <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-2xl font-semibold tracking-tight">{project.name}</h1>
-              {project.status === 'ARCHIVED' && (
-                <Badge variant="secondary" className="gap-1">
-                  <Archive className="h-3 w-3" />
-                  Archived
-                </Badge>
+      <div className="relative overflow-hidden rounded-xl border bg-card shadow-sm">
+        {/* Decorative gradient strip */}
+        <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-br from-indigo-50 via-violet-50 to-transparent pointer-events-none" />
+
+        <div className="relative p-6">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div className="space-y-3 min-w-0">
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm shadow-primary/30 shrink-0">
+                  <FolderKanban className="h-5 w-5" />
+                </div>
+                <div className="min-w-0">
+                  <h1 className="text-2xl font-semibold tracking-tight truncate">{project.name}</h1>
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    {project.status === 'ARCHIVED' ? (
+                      <Badge variant="secondary" className="gap-1">
+                        <Archive className="h-3 w-3" />
+                        Archived
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="gap-1.5 border-emerald-200 bg-emerald-50 text-emerald-700">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                        Active
+                      </Badge>
+                    )}
+                    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <UserAvatar name={project.owner.name} seed={project.owner.email} size="xs" />
+                      Owned by <span className="font-medium text-foreground">{project.owner.name}</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {project.description && (
+                <p className="text-sm text-muted-foreground max-w-2xl pl-13" style={{ paddingLeft: '3.25rem' }}>
+                  {project.description}
+                </p>
               )}
             </div>
-            {project.description && (
-              <p className="text-sm text-muted-foreground max-w-2xl">{project.description}</p>
-            )}
-            <div className="flex items-center gap-2 pt-1">
-              <UserAvatar name={project.owner.name} seed={project.owner.email} size="xs" />
-              <span className="text-xs text-muted-foreground">
-                Owned by <span className="font-medium text-foreground">{project.owner.name}</span>
-              </span>
+            <div className="flex gap-2">
+              {canArchive && (
+                <Button variant="outline" onClick={handleArchiveToggle}>
+                  <Archive className="h-4 w-4" />
+                  {project.status === 'ACTIVE' ? 'Archive' : 'Reactivate'}
+                </Button>
+              )}
+              {canDelete && (
+                <Button variant="destructive" onClick={handleDelete}>
+                  <Trash2 className="h-4 w-4" />
+                  Delete
+                </Button>
+              )}
             </div>
           </div>
-          <div className="flex gap-2">
-            {canArchive && (
-              <Button variant="outline" onClick={handleArchiveToggle}>
-                <Archive className="h-4 w-4" />
-                {project.status === 'ACTIVE' ? 'Archive' : 'Reactivate'}
-              </Button>
-            )}
-            {canDelete && (
-              <Button variant="destructive" onClick={handleDelete}>
-                <Trash2 className="h-4 w-4" />
-                Delete
-              </Button>
-            )}
-          </div>
-        </div>
 
-        {taskStats.total > 0 && (
-          <div className="mt-5 pt-5 border-t space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">Progress</span>
-              <span className="font-medium">
-                {taskStats.done} / {taskStats.total} done · {Math.round(progressPct)}%
-              </span>
-            </div>
-            <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-              <div
-                className="h-full bg-emerald-500 transition-all"
-                style={{ width: `${progressPct}%` }}
-              />
-            </div>
+          {/* Stat strip */}
+          <div className="mt-5 pt-5 border-t grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <StatPill label="Tasks" value={taskStats.total} accent="indigo" />
+            <StatPill label="Completed" value={taskStats.done} accent="emerald" />
+            <StatPill label="Members" value={project.members.length + 1} accent="violet" />
+            <StatPill
+              label="Progress"
+              value={`${Math.round(progressPct)}%`}
+              accent={progressPct === 100 ? 'emerald' : 'amber'}
+            />
           </div>
-        )}
+
+          {taskStats.total > 0 && (
+            <div className="mt-4 space-y-1.5">
+              <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all"
+                  style={{ width: `${progressPct}%` }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         <div className="space-y-4">
-          <div className="flex items-center justify-between gap-4">
-            <h2 className="text-lg font-semibold">Tasks</h2>
+          <div className="flex items-end justify-between gap-4 flex-wrap">
+            <div>
+              <h2 className="text-lg font-semibold">Tasks</h2>
+              <p className="text-xs text-muted-foreground">
+                {tasks.length === 0
+                  ? 'No tasks yet — create your first one.'
+                  : `${tasks.length} task${tasks.length === 1 ? '' : 's'} in this project`}
+              </p>
+            </div>
             {canCreateTask && (
               <CreateTaskDialog projectId={project.id} candidates={candidates} onCreated={load} />
             )}
@@ -247,17 +279,19 @@ export function ProjectDetailPage() {
           <TaskBoard tasks={tasks} onChanged={load} onOpen={setOpenTask} />
         </div>
 
-        <Card>
-          <CardContent className="p-5 space-y-4">
+        <Card className="overflow-hidden">
+          <div className="bg-gradient-to-br from-violet-50 to-indigo-50 px-5 py-3 border-b">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold inline-flex items-center gap-2">
-                <Users2 className="h-4 w-4" />
+                <Users2 className="h-4 w-4 text-violet-600" />
                 Team
               </h3>
-              <span className="text-xs text-muted-foreground tabular-nums">
+              <span className="inline-flex items-center justify-center min-w-6 h-5 px-2 rounded-full bg-white text-xs font-semibold text-violet-700 tabular-nums shadow-sm">
                 {project.members.length + 1}
               </span>
             </div>
+          </div>
+          <CardContent className="p-5 space-y-4">
 
             <div className="space-y-2">
               <MemberRow
@@ -314,6 +348,30 @@ export function ProjectDetailPage() {
         onClose={() => setOpenTask(null)}
         onChanged={load}
       />
+    </div>
+  );
+}
+
+const STAT_TONE = {
+  indigo: 'bg-indigo-50 text-indigo-700 ring-indigo-100',
+  emerald: 'bg-emerald-50 text-emerald-700 ring-emerald-100',
+  violet: 'bg-violet-50 text-violet-700 ring-violet-100',
+  amber: 'bg-amber-50 text-amber-700 ring-amber-100',
+} as const;
+
+function StatPill({
+  label,
+  value,
+  accent,
+}: {
+  label: string;
+  value: string | number;
+  accent: keyof typeof STAT_TONE;
+}) {
+  return (
+    <div className={`rounded-lg px-3 py-2 ring-1 ring-inset ${STAT_TONE[accent]}`}>
+      <p className="text-[10px] uppercase tracking-wider font-semibold opacity-70">{label}</p>
+      <p className="text-lg font-bold tabular-nums leading-tight mt-0.5">{value}</p>
     </div>
   );
 }
