@@ -1,38 +1,45 @@
 # Team Task Manager
 
-Full-stack task manager with **role-based access control** (Admin / User), JWT auth, projects, kanban-style tasks, dashboard widgets. Built with React + TypeScript on the front, Node.js + Express + Prisma + PostgreSQL on the back.
+Full-stack task manager with **role-based access control** (Admin / User), JWT auth, projects, kanban-style tasks, and a permissions-aware dashboard. React + TypeScript on the front, Node.js + Express + Prisma + PostgreSQL on the back.
 
 ---
 
-## First admin
+## 🌐 Live demo
 
-The seed (`npm run prisma:seed` in `backend/`) creates the first admin user using the credentials
-you set in your `.env`:
+| | |
+|---|---|
+| **App** | https://task-manager-frontend-woad.vercel.app |
+| **API** | https://task-manager-backend-3i8o.onrender.com |
+| **Repo** | https://github.com/Adityarai122/task-manger |
+
+> First request after a quiet period takes 30–50 seconds — the free Render backend cold-starts on demand. Subsequent requests are instant.
+
+### Demo credentials
 
 ```
-SEED_ADMIN_EMAIL=...        # required — pick any email
-SEED_ADMIN_PASSWORD=...     # required — min 8 chars, choose a strong password
-SEED_ADMIN_NAME=Admin       # optional — display name
+Email:    admin@taskmanager.local
+Password: Admin@123
 ```
 
-Then sign in with that email + password. The admin invites all other users (Admin or User role)
-from the **Users** page. There is no public signup.
+The admin invites everyone else (Admin or User) from the **Users** page — there is no public sign-up by design.
 
 ---
 
-## Features
+## ✨ Features
 
-- **Auth**: login, refresh-token rotation, logout, `/me`. Tokens revoked on user deactivation via `tokenVersion`.
-- **Users (admin)**: list, invite, edit, change role, deactivate. Last-admin guard.
-- **Profile (any user)**: view roles + permissions, change name and password.
-- **Projects**: Admin creates and manages; Users see projects they own or are members of. Members can be added/removed; project can be archived or deleted (cascades tasks).
-- **Tasks**: Admin creates and assigns; Users update status on tasks assigned to them. Filterable by status. Kanban board on the project detail page.
-- **Dashboard**: counts (projects, tasks, overdue, users / assigned-to-me), tasks-by-status bars, recent activity. Admin sees company-wide; users see their own scope.
-- **Permission-aware UI**: sidebar items, action buttons, and route guards all gated by the permissions in the JWT.
+- **Auth** — login, refresh-token rotation, logout, `/me`. Tokens revoke on user deactivation via `tokenVersion`.
+- **Users (admin)** — list, invite (with role), edit, change role, deactivate. Last-admin guard prevents lockout.
+- **Profile (any user)** — view roles + permissions, change name and password.
+- **Projects** — Admins create and manage; non-admins see projects they own or are members of. Members can be added/removed; project can be archived or deleted (cascades tasks).
+- **Tasks** — kanban board (TODO / IN PROGRESS / IN REVIEW / DONE) on each project, plus a global tasks page with filters. Admins create + assign anywhere; non-admins create tasks within projects they belong to and can update status on tasks assigned to them. Cannot self-assign — must pick another team member.
+- **Task detail dialog** — click any task to see assignee, who created it (with avatar + relative time), description, due date, completion timestamp, and inline status moves. "Assigned to you by X" banner when someone gives you a task.
+- **Dashboard** — stats (projects, tasks, overdue, users / assigned-to-me), tasks-by-status bars, "Assigned to you" inbox callout, recent activity. Admin sees company-wide; users see their own scope.
+- **Permission-aware UI** — sidebar items, action buttons, and route guards all gated by the JWT's permission array. Server enforces independently on every request.
+- **Custom in-app dialogs** — no native browser `confirm()` popups; all destructive actions go through a styled `AlertDialog`.
 
 ---
 
-## Stack
+## 🧱 Stack
 
 | Layer | Tech |
 |---|---|
@@ -42,18 +49,18 @@ from the **Users** page. There is no public signup.
 | Auth | JWT (access 15m + refresh 7d, rotated) — bcryptjs |
 | Validation | Zod (mirrored client + server) |
 | Logging | pino with secret redaction |
-| Deploy | Railway (mono-repo, two services + Postgres plugin) |
+| Deploy | Vercel (frontend) + Render (backend) + Neon (Postgres) |
 
 ---
 
-## Architecture
+## 🏛 Architecture
 
 Clean Architecture, feature-first, mirrored on both sides:
 
 ```
 src/
 ├── core/                          (infra: db, network, logging, errors, middleware, utils)
-│   └── constants/permissions.ts   (single source of truth — Admin: all, User: limited)
+│   └── constants/permissions.ts   (single source of truth — Admin: 19 perms, User: 6)
 ├── features/
 │   ├── auth/                      (login, refresh, logout, /me)
 │   ├── user/                      (list, invite, update, role change, deactivate)
@@ -68,18 +75,18 @@ Each feature has the same shape:
 | Layer | Purpose |
 |---|---|
 | `*.schema.ts` | Zod validation (request bodies + query params) |
-| `*.repository.ts` | Prisma queries (or HTTP calls on the frontend) |
+| `*.repository.ts` | Prisma queries (HTTP calls on the frontend) |
 | `*.service.ts` | Business logic; permission/scope checks live here |
-| `*.controller.ts` | Express handlers (only on backend) |
+| `*.controller.ts` | Express handlers (backend only) |
 | `*.routes.ts` | Mounts middleware + binds controllers |
 | `presentation/` | React pages, components, Zustand stores (frontend) |
 
 ### RBAC
 
-Roles **Admin** and **User** are seeded with permission sets:
+Two roles, seeded with their permission sets:
 
-- **Admin** (18 permissions): everything
-- **User** (5): `self.read`, `self.update`, `project.read`, `task.read`, `task.update.own`
+- **Admin** (19 perms) — everything: manage users, projects, tasks, all data
+- **User** (6 perms) — `self.read`, `self.update`, `project.read`, `task.read`, `task.update.own`, `task.create.member`
 
 JWT carries the user's effective permission array → every protected route uses `requirePermission(key)` middleware → no DB hit per check. Refresh re-resolves permissions, so role changes propagate within one access-token TTL.
 
@@ -92,39 +99,43 @@ Request →  Bearer access token  → middleware verifies + attaches req.user
 Logout  →  Refresh token marked revoked
 ```
 
-Rotating refresh tokens means stealing one is single-use. Bumping `tokenVersion` (on deactivation or role change) immediately invalidates outstanding refresh tokens for that user.
+Rotating refresh tokens means a stolen refresh token is single-use. Bumping `tokenVersion` (on deactivation or role change) immediately invalidates outstanding refresh tokens for that user.
 
 ### Scope rules
 
-| Resource | Admin | User |
+| Resource | Admin | Regular User |
 |---|---|---|
 | Users | All | Self only |
 | Projects | All | Owned or member-of |
 | Tasks | All | Created by, assigned to, or in projects they belong to |
 | Dashboard | Company-wide | Their own scope (same rules above) |
 
-All scope filtering happens in the service layer — controllers are dumb.
+All scope filtering happens in the service layer — controllers stay dumb.
 
 ---
 
-## Local development
+## 🛠 Local development
 
 ### Prerequisites
 - Node.js ≥ 20
-- PostgreSQL ≥ 14
+- PostgreSQL ≥ 14 (or use a Neon/Supabase/Railway managed DB)
 
 ### Setup
 
 ```bash
 # Clone + install
-git clone <repo>
-cd task-manager
+git clone https://github.com/Adityarai122/task-manger.git
+cd task-manger
 
 # Backend
 cd backend
 npm install
 cp .env.example .env
-# Edit .env: set DATABASE_URL and (in prod) generate fresh JWT secrets
+# Edit .env: set DATABASE_URL, generate JWT secrets, choose admin creds
+
+# Generate strong secrets
+node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+# Run twice — paste outputs as JWT_ACCESS_SECRET and JWT_REFRESH_SECRET
 
 # Create DB (one-time)
 psql -U postgres -c "CREATE DATABASE task_manager_dev;"
@@ -149,11 +160,11 @@ cd backend && npm run dev
 cd frontend && npm run dev
 ```
 
-Open http://localhost:5173 and sign in with the demo credentials.
+Open http://localhost:5173 and sign in with the credentials you set in `SEED_ADMIN_*`.
 
 ---
 
-## API surface
+## 📡 API surface
 
 ```
 POST   /api/v1/auth/login                  public
@@ -179,7 +190,7 @@ POST   /api/v1/projects/:id/members        project.member.manage (Admin)
 DELETE /api/v1/projects/:id/members/:uid   project.member.manage (Admin)
 
 GET    /api/v1/tasks                       task.read           (?mine=true | ?projectId | ?status)
-POST   /api/v1/tasks                       task.create         (Admin)
+POST   /api/v1/tasks                       task.create | task.create.member
 GET    /api/v1/tasks/:id                   task.read
 PATCH  /api/v1/tasks/:id                   task.update         (Admin)
 PATCH  /api/v1/tasks/:id/own               task.update | task.update.own
@@ -188,14 +199,14 @@ DELETE /api/v1/tasks/:id                   task.delete         (Admin)
 GET    /api/v1/dashboard                   authed              (scope: company / self)
 ```
 
-All errors return:
+Errors return:
 ```json
 { "error": { "code": "FORBIDDEN", "message": "Missing permission: user.read" } }
 ```
 
 ---
 
-## Backend env reference
+## 🔐 Backend env reference
 
 Validated by Zod on boot — invalid env crashes the server with a clear message.
 
@@ -212,10 +223,9 @@ Validated by Zod on boot — invalid env crashes the server with a clear message
 | `SEED_ADMIN_PASSWORD` | — | required by `prisma:seed`, min 8 chars |
 | `SEED_ADMIN_NAME` | `Admin` | optional |
 | `LOG_LEVEL` | `info` | |
-| `PORT` | `4000` | Railway provides |
+| `PORT` | `4000` | hosting provider injects this |
 
-Generate strong secrets:
-
+Generate strong JWT secrets:
 ```bash
 node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
 ```
@@ -224,63 +234,58 @@ node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
 
 | Variable | Default | Notes |
 |---|---|---|
-| `VITE_API_URL` | `http://localhost:4000/api/v1` | Inlined at build time |
+| `VITE_API_URL` | `http://localhost:4000/api/v1` | inlined at build time |
 
 ---
 
-## Railway deployment
+## 🚀 Deployment
 
-Mono-repo, three Railway services in one project:
+The current live deployment uses three services on free tiers:
 
-1. **PostgreSQL plugin** — provides `DATABASE_URL`.
-2. **Backend** service — root `backend/`, `railway.json` provides build/start commands.
-3. **Frontend** service — root `frontend/`, serves `dist/` via `serve`.
+| Service | Provider | Notes |
+|---|---|---|
+| Database | [Neon](https://neon.tech) | Free 0.5 GB Postgres, no credit card |
+| Backend  | [Render](https://render.com) | Free Node.js web service (sleeps after 15 min idle, ~30 s wake-up) |
+| Frontend | [Vercel](https://vercel.com) | Free static hosting + global CDN, no sleep |
 
-### Backend service settings
+Why this split instead of one provider:
+- Vercel never sleeps the frontend, so the demo URL always loads instantly.
+- Render's free Node tier is fine for an assignment demo; the cold start only affects the very first request.
+- Neon is faster to provision and more reliable than Render's managed PG.
+- Decoupling frontend / backend / DB matches how a real production system would be wired.
 
-- Root directory: `backend`
-- Reference variable `DATABASE_URL` from the Postgres plugin
-- Set: `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `CORS_ORIGIN=https://<frontend>.up.railway.app`, `NODE_ENV=production`
+### Backend (Render)
 
-`railway.json` runs:
-```
-npm ci && npm run build && npx prisma migrate deploy
-node dist/server.js
-```
-Healthcheck: `/healthz` (verifies DB ping).
+- **Root directory**: `backend`
+- **Build command**: `npm install --include=dev && npm run build`
+- **Start command**: `npm run start:prod` (runs `prisma migrate deploy` then `node dist/server.js`)
+- **Env vars**: all 12 listed above, with `DATABASE_URL` pointing at Neon and `CORS_ORIGIN` pointing at the Vercel domain.
 
-After first deploy, run the seed once via Railway's "Run command":
-```
-npm run prisma:seed
-```
+A `railway.json` is also kept in `backend/` for one-click Railway deploys (alternative path).
 
-### Frontend service settings
+### Frontend (Vercel)
 
-- Root directory: `frontend`
-- Set: `VITE_API_URL=https://<backend>.up.railway.app/api/v1`
+- **Root directory**: `frontend`
+- **Framework preset**: Vite (auto-detected)
+- **Build command**: default (`npm run build`)
+- **Output directory**: `dist`
+- **Env var**: `VITE_API_URL=https://<backend-url>/api/v1`
 
-`railway.json` runs:
-```
-npm ci && npm run build
-npx serve -s dist -l $PORT --no-clipboard
-```
+### Database (Neon)
 
-`serve.json` configures SPA fallback so client-side routes work on hard reloads.
-
-### First deploy chicken-and-egg
-
-Both services need each other's URL. Workflow:
-1. Deploy backend with `CORS_ORIGIN=*` temporarily.
-2. Deploy frontend; copy its public URL.
-3. Update backend `CORS_ORIGIN` to the frontend URL → redeploy.
-4. Update `VITE_API_URL` on frontend → redeploy.
+- Create project → copy the **pooled** connection string.
+- Run migrations + seed once from your local machine pointing at the Neon URL:
+  ```bash
+  DATABASE_URL=postgresql://...neon.tech/neondb?sslmode=require \
+  npx prisma migrate deploy && npm run prisma:seed
+  ```
 
 ---
 
-## Project layout
+## 🗂 Project layout
 
 ```
-task-manager/
+task-manger/
 ├── backend/
 │   ├── prisma/
 │   │   ├── schema.prisma
@@ -313,7 +318,7 @@ task-manager/
     │   │   ├── storage/LocalStorage.ts
     │   │   └── utils/{cn,extractErrorMessage}.ts
     │   └── lib/
-    │       ├── widgets/                (button, input, label, card, dialog, dropdown, ...)
+    │       ├── widgets/                (button, input, card, dialog, alert-dialog, dropdown, ...)
     │       ├── components/             (cross-feature shared)
     │       ├── hooks/usePermissions.ts
     │       ├── routing/                (AppRouter, ProtectedRoute, RequirePermission, GuestRoute)
@@ -330,23 +335,35 @@ task-manager/
 
 ---
 
-## What's implemented
+## ✅ What's implemented
 
 - [x] JWT auth with refresh-token rotation + DB-backed revocation
-- [x] Two roles seeded (Admin, User), permissions catalog
+- [x] Two roles seeded (Admin, User) with a permissions catalog
 - [x] Admin invites users with chosen role
 - [x] Promote/demote between Admin and User; last-admin protection; no self-demote/deactivate
 - [x] Soft-delete users with `tokenVersion` bump (kills outstanding tokens)
 - [x] Profile page (name + password change)
-- [x] Projects: CRUD + members, scope filtered for non-admin
+- [x] Projects: CRUD + members, scope-filtered for non-admins
 - [x] Tasks: CRUD + assign + due date + priority; `/own` endpoint for non-admin status updates
-- [x] Kanban board on project detail; admin/user actions gated correctly
+- [x] User-to-user task creation (project members can assign within their projects)
+- [x] No-self-assign rule on the task creator
+- [x] Kanban board on project detail with gradient column headers + status icons
+- [x] "Assigned to you by X" banner on tasks given to you
+- [x] Click-to-open task detail dialog (assignee, creator, dates, status moves)
 - [x] Tasks page with filters and "Mine / All" toggle for admin
 - [x] Dashboard widgets pulling real aggregates (`/dashboard`)
+- [x] "Assigned to you" inbox callout on dashboard
 - [x] Permission-aware UI everywhere; server enforces independently
+- [x] Custom in-app `confirm` dialogs (no native browser popups)
 - [x] Validated env via Zod
 - [x] Structured logging (pino) with secret redaction
 - [x] Helmet + rate-limit on auth endpoints
 - [x] CORS allowlist
-- [x] Railway deploy config (`railway.json` for both services + SPA fallback)
-- [x] Production builds verified locally (backend `tsc + tsc-alias`, frontend Vite)
+- [x] Production builds verified (backend `tsc + tsc-alias`, frontend Vite)
+- [x] Live deploy on Vercel + Render + Neon
+
+---
+
+## 📝 License
+
+This project was built as a hiring assignment / portfolio piece. Code is provided as-is; feel free to fork and learn from it.
