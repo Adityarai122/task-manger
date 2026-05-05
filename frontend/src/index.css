@@ -1,0 +1,98 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Neutrals — slightly warm slate */
+    --background: 220 25% 98%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* Primary — indigo, more inviting than near-black */
+    --primary: 234 89% 58%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary — soft slate */
+    --secondary: 220 25% 95%;
+    --secondary-foreground: 222 47% 18%;
+
+    --muted: 220 18% 95%;
+    --muted-foreground: 220 12% 42%;
+
+    --accent: 234 100% 96%;
+    --accent-foreground: 234 89% 35%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 18% 90%;
+    --input: 220 18% 90%;
+    --ring: 234 89% 58%;
+
+    --radius: 0.625rem;
+  }
+
+  .dark {
+    --background: 224 25% 7%;
+    --foreground: 210 30% 98%;
+    --card: 224 22% 10%;
+    --card-foreground: 210 30% 98%;
+    --popover: 224 22% 10%;
+    --popover-foreground: 210 30% 98%;
+    --primary: 234 89% 65%;
+    --primary-foreground: 222 47% 7%;
+    --secondary: 220 18% 16%;
+    --secondary-foreground: 210 30% 96%;
+    --muted: 220 18% 16%;
+    --muted-foreground: 220 12% 65%;
+    --accent: 234 50% 22%;
+    --accent-foreground: 234 100% 92%;
+    --destructive: 0 65% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 18% 18%;
+    --input: 220 18% 18%;
+    --ring: 234 89% 65%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family:
+      'Inter',
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      'Segoe UI',
+      Roboto,
+      sans-serif;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+  html {
+    scrollbar-gutter: stable;
+  }
+  h1, h2, h3, h4 {
+    letter-spacing: -0.018em;
+  }
+}
+
+@layer utilities {
+  .bg-app-gradient {
+    background:
+      radial-gradient(circle at 0% 0%, hsl(234 100% 96%) 0%, transparent 50%),
+      radial-gradient(circle at 100% 100%, hsl(280 100% 97%) 0%, transparent 50%),
+      hsl(220 25% 98%);
+  }
+  .glass {
+    background: hsl(0 0% 100% / 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+}
