@@ -4,16 +4,19 @@ Full-stack task manager with **role-based access control** (Admin / User), JWT a
 
 ---
 
-## Demo credentials
+## First admin
 
-After running the seed (`npm run prisma:seed` in `backend/`):
+The seed (`npm run prisma:seed` in `backend/`) creates the first admin user using the credentials
+you set in your `.env`:
 
 ```
-Email:    admin@taskmanager.local
-Password: Admin@123
+SEED_ADMIN_EMAIL=...        # required — pick any email
+SEED_ADMIN_PASSWORD=...     # required — min 8 chars, choose a strong password
+SEED_ADMIN_NAME=Admin       # optional — display name
 ```
 
-The admin invites all other users (Admin or User role) from the **Users** page. There is no public signup.
+Then sign in with that email + password. The admin invites all other users (Admin or User role)
+from the **Users** page. There is no public signup.
 
 ---
 
@@ -205,9 +208,9 @@ Validated by Zod on boot — invalid env crashes the server with a clear message
 | `REFRESH_TOKEN_TTL` | `7d` | |
 | `CORS_ORIGIN` | `http://localhost:5173` | comma-separated allowlist |
 | `BCRYPT_ROUNDS` | `12` | |
-| `SEED_ADMIN_EMAIL` | `admin@taskmanager.local` | |
-| `SEED_ADMIN_PASSWORD` | `Admin@123` | |
-| `SEED_ADMIN_NAME` | `Default Admin` | |
+| `SEED_ADMIN_EMAIL` | — | required by `prisma:seed` |
+| `SEED_ADMIN_PASSWORD` | — | required by `prisma:seed`, min 8 chars |
+| `SEED_ADMIN_NAME` | `Admin` | optional |
 | `LOG_LEVEL` | `info` | |
 | `PORT` | `4000` | Railway provides |
 

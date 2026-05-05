@@ -51,9 +51,18 @@ async function seedRoles() {
 
 async function seedAdminUser() {
   console.log('3/3  Seeding default admin user...');
-  const email = process.env.SEED_ADMIN_EMAIL ?? 'admin@taskmanager.local';
-  const password = process.env.SEED_ADMIN_PASSWORD ?? 'Admin@123';
-  const name = process.env.SEED_ADMIN_NAME ?? 'Default Admin';
+  const email = process.env.SEED_ADMIN_EMAIL;
+  const password = process.env.SEED_ADMIN_PASSWORD;
+  const name = process.env.SEED_ADMIN_NAME ?? 'Admin';
+
+  if (!email || !password) {
+    throw new Error(
+      'SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD must be set in the environment to run the seed.',
+    );
+  }
+  if (password.length < 8) {
+    throw new Error('SEED_ADMIN_PASSWORD must be at least 8 characters long.');
+  }
 
   const adminRole = await prisma.role.findUnique({ where: { name: ROLE_ADMIN } });
   if (!adminRole) throw new Error('Admin role missing — seedRoles() must run first');
@@ -74,7 +83,8 @@ async function seedAdminUser() {
       roles: { create: { roleId: adminRole.id } },
     },
   });
-  console.log(`     ✓ admin created: ${user.email}  (password: ${password})`);
+  // Don't log the password — operator already knows it (they set the env var)
+  console.log(`     ✓ admin created: ${user.email}`);
 }
 
 async function main() {

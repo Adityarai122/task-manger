@@ -17,10 +17,6 @@ const envSchema = z.object({
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
 
   BCRYPT_ROUNDS: z.coerce.number().int().min(8).max(15).default(12),
-
-  SEED_ADMIN_EMAIL: z.string().email().default('admin@taskmanager.local'),
-  SEED_ADMIN_PASSWORD: z.string().min(8).default('Admin@123'),
-  SEED_ADMIN_NAME: z.string().default('Default Admin'),
 });
 
 const parsed = envSchema.safeParse(process.env);

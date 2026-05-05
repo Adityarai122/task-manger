@@ -88,12 +88,6 @@ export function LoginPage() {
               </Button>
             </form>
           </Form>
-
-          <div className="rounded-md border border-dashed bg-muted/40 p-3 text-xs text-muted-foreground">
-            <p className="font-medium text-foreground mb-1">Demo admin</p>
-            <p><span className="text-muted-foreground">Email:</span> admin@taskmanager.local</p>
-            <p><span className="text-muted-foreground">Password:</span> Admin@123</p>
-          </div>
         </div>
 
         <p className="text-center text-xs text-muted-foreground">
